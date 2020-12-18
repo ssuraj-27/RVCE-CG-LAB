@@ -1,127 +1,93 @@
-#include<iostream>
-using namespace std;
+#include<stdlib.h>
 #include<gl/glut.h>
-int xc, yc, r, ch;
-int point[4][2] = { {300,300},{600,300},{600,600},{300,600} };
+#include<algorithm>
+#include<iostream>
+#include<windows.h>
 
-void myinit()
-{
-	glClearColor(1.0, 1.0, 1.0, 1.0);
-	glColor3f(0.0, 1.0, 0.0);
-	glPointSize(5.0);
-	gluOrtho2D(0.0, 800, 0.0, 800);
-}
+using namespace std;
+float x[100], y[100]; //= { 0,0,20,100,100 }, y[] = { 0,100,50,100,0 };
 
-void draw_circle(int xc, int yc, int x, int y)
-{
-	glBegin(GL_POINTS);
-	glVertex2i(xc + x, yc + y);
-	glVertex2i(xc - x, yc + y);
-	glVertex2i(xc + x, yc - y);
-	glVertex2i(xc - x, yc - y);
-	glVertex2i(xc + y, yc + x);
-	glVertex2i(xc - y, yc + x);
-	glVertex2i(xc + y, yc - x);
-	glVertex2i(xc - y, yc - x);
+int n, m;
+int wx = 500, wy = 500;
+static float intx[10] = { 0 };
+
+void draw_line(float x1, float y1, float x2, float y2) {
+	Sleep(100);
+	glColor3f(1, 0, 0);
+	glBegin(GL_LINES);
+	glVertex2f(x1, y1);
+	glVertex2f(x2, y2);
 	glEnd();
+	glFlush();
+
 }
 
-void display_cylinder(int xc, int yc, int r)
-{
-	int x = 0, y = r;
-	int d = 3 - 2 * r;
-	while (x < y)
-	{
-		draw_circle(xc, yc, x, y);
-		x++;
-		if (d < 0)
-			d = d + 4 * x + 6;
-		else
-		{
-			y--;
-			d = d + 4 * (x - y) + 10;
+void edgeDetect(float x1, float y1, float x2, float y2, int scanline) {
+
+	float temp;
+	if (y2 < y1) {
+
+		temp = x1; x1 = x2; x2 = temp;
+		temp = y1; y1 = y2; y2 = temp;
+	}
+
+	if (scanline > y1 && scanline < y2)
+		intx[m++] = x1 + (scanline - y1) * (x2 - x1) / (y2 - y1);
+}
+
+void scanfill(float x[], float y[]) {
+	for (int s1 = 0; s1 <= wy; s1++) {
+		m = 0;
+		for (int i = 0; i < n; i++) {
+
+			edgeDetect(x[i], y[i], x[(i + 1) % n], y[(i + 1) % n], s1);
 		}
-		draw_circle(xc, yc, x, y);
+		sort(intx, (intx + m));
+		if (m >= 2)
+			for (int i = 0; i < m; i = i + 2)
+				draw_line(intx[i], s1, intx[i + 1], s1);
+
 	}
 
 }
 
-void disply_parallelopiped()
-{
-	glBegin(GL_LINE_LOOP);
-	glVertex2i(point[0][0]--, point[0][1]--);
-	glVertex2i(point[1][0]--, point[1][1]--);
-	glVertex2i(point[2][0]--, point[2][1]--);
-	glVertex2i(point[3][0]--, point[3][1]--);
-	glEnd();
-}
+void display_filled_polygon() {
 
-void draw_cylinder()
-{
-	int y, r1;
 	glClear(GL_COLOR_BUFFER_BIT);
-
-	display_cylinder(xc, yc, r);
-	glColor3f(1, 0, 0);
-	for (y = yc + 1;y < 300;y++)
-		display_cylinder(xc, y, r);
-
-	glColor3f(0, 0, 1);
-	for (r1 = 0;r1 <= r;r1++)
-		display_cylinder(xc, y, r1);
-
-	glFlush();
-}
-
-void draw_parallelopiped()
-{
-	int y;
-	glClear(GL_COLOR_BUFFER_BIT);
-
-	glColor3f(0, 0, 1);
-	disply_parallelopiped();
-
-	glColor3f(1, 0, 0);
-	for (y = 200;y > 0;y--)
-		disply_parallelopiped();
-
-	glColor3f(0, 0, 1);
-	disply_parallelopiped();
-
+	glLineWidth(2);
 	glBegin(GL_LINE_LOOP);
-	glVertex2i(point[0][0]--, point[0][1]--);
-	glVertex2i(point[1][0]--, point[1][1]--);
-	glVertex2i(point[2][0]--, point[2][1]--);
-	glVertex2i(point[3][0]--, point[3][1]--);
+	for (int i = 0; i < n; i++)
+		glVertex2f(x[i], y[i]);
 	glEnd();
-
-	glFlush();
+	scanfill(x, y);
+	//glFlush();
 }
 
-int main(int argc, char** argv)
-{
-	cout << "1:cylinder 2:parlelopiped\n";
-	cout << "Enter the choice\n";
-	cin >> ch;
+void myInit() {
 
-	glutInit(&argc, argv);
+	glClearColor(1, 1, 1, 1);
+	glColor3f(0, 0, 1);
+	glPointSize(1);
+
+	gluOrtho2D(0, wx, 0, wy);
+
+}
+void main(int ac, char* av[]) {
+	glutInit(&ac, av);
+	printf("Enter no. of sides: \n");
+	scanf("%d", &n);
+	printf("Enter coordinates of endpoints: \n");
+	for (int i = 0; i < n; i++)
+	{
+		printf("X-coord Y-coord: \n");
+		scanf("%f %f", &x[i], &y[i]);
+	}
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
 	glutInitWindowSize(500, 500);
-	glutInitWindowPosition(100, 100);
-	glutCreateWindow("new window");
-
-	if (ch == 1)
-	{
-		cout << "Enter circle coordinates\n";
-		cin >> xc >> yc;
-		cout << "Enter circle radius\n";
-		cin >> r;
-		glutDisplayFunc(draw_cylinder);
-	}
-	else
-		glutDisplayFunc(draw_parallelopiped);
-
-	myinit();
+	glutInitWindowPosition(0, 0);
+	glutCreateWindow("scanline");
+	glutDisplayFunc(display_filled_polygon);
+	myInit();
 	glutMainLoop();
 
 }
